@@ -19,6 +19,7 @@ class UserRegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
 
     def create(self, request, *args, **kwargs):
+        print(request.data)
         response = super().create(request, *args, **kwargs)
         response.status_code = status.HTTP_201_CREATED
         response.data = {

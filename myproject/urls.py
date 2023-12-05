@@ -22,4 +22,5 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('auth/', include('user.urls')),
     path('', include('ai.urls')),
+    path('', include('weather.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
