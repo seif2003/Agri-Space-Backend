@@ -9,21 +9,42 @@ import torch
 import pandas as pd
 from django.views.decorators.csrf import csrf_exempt
 from .CNN import CNN
+from rest_framework.authtoken.models import Token
 
 
-# corriger ces imports pour que les import vient de static file
+from termcolor import colored
+from pyfiglet import figlet_format
 
 
-# Obtenez le chemin du répertoire statique
+def custom_login_required(view_func):
+    def _wrapped_view(request, *args, **kwargs):
+        authorization_header = request.headers.get('Authorization')
+
+        if not authorization_header or not authorization_header.startswith('Token '):
+            return JsonResponse({'error': 'Invalid or missing authorization token'}, status=401)
+
+        token_key = authorization_header.split(' ')[1]
+
+        try:
+            token = Token.objects.get(key=token_key)
+        except Token.DoesNotExist:
+            return JsonResponse({'error': 'Invalid token'}, status=401)
+
+        request.authenticated_user = token.user
+
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped_view
+
+
+
 static_dir = settings.STATIC_ROOT
 media_dir = os.path.join(settings.BASE_DIR, 'media')
 
-# Construisez le chemin vers vos fichiers
 disease_info_path = os.path.join(static_dir, 'disease_info.csv')
 supplement_info_path = os.path.join(static_dir, 'supplement_info.csv')
 model_path = os.path.join(static_dir, 'plant_disease_model_1_latest.pt')
 
-# Utilisez ces chemins pour charger vos fichiers
 disease_info = pd.read_csv(disease_info_path , encoding='cp1252')
 supplement_info = pd.read_csv(supplement_info_path,encoding='cp1252')
 
@@ -41,9 +62,11 @@ def prediction(image_path):
     index = np.argmax(output)
     return index
 
-@csrf_exempt
+@custom_login_required
 def submit(request):
     if request.method == 'POST':
+        """if 'image' not in request.FILES:
+            return JsonResponse({'error': 'No image file found in the request.'})"""
         image = request.FILES['image']
         filename = image.name
         file_path = os.path.join(media_dir, filename) 
@@ -59,6 +82,7 @@ def submit(request):
         supplement_name = supplement_info['supplement name'][pred]
         supplement_image_url = supplement_info['supplement image'][pred]
         supplement_buy_link = supplement_info['buy link'][pred]
+        image_url = request.build_absolute_uri(settings.MEDIA_URL + filename)
         response = {
             'title' : title,
             'desc' : description,
@@ -68,6 +92,11 @@ def submit(request):
             'sname' : supplement_name,
             'simage' : supplement_image_url,
             'buy_link' : supplement_buy_link,
-            'uimage': file_path
+            'uimage': image_url
         }
+
+        text = f"AI Submission"
+
+        print(colored(figlet_format(text), color="green"))
+
         return JsonResponse(response)

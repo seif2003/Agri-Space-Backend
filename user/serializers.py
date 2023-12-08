@@ -14,7 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
-                message="cet adresse mail est déjà utilisée"
+                message="This email address is currently used"
             )
         ]
     )
@@ -38,7 +38,7 @@ class AuthTokenSerializer(serializers.Serializer):
                             password=attrs.get('password'))
 
         if not user:
-            msg = "Erreur : L'email ou le mot de passe est incorrect."
+            msg = "Error: The email or the password is incorrect."
             raise serializers.ValidationError(msg, code='authorization')
 
         attrs['user'] = user

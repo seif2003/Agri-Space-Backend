@@ -8,6 +8,8 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.exceptions import ValidationError
+from termcolor import colored
+from pyfiglet import figlet_format
 
 
 User = get_user_model()
@@ -19,14 +21,18 @@ class UserRegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
 
     def create(self, request, *args, **kwargs):
-        print(request.data)
+
         response = super().create(request, *args, **kwargs)
         response.status_code = status.HTTP_201_CREATED
         response.data = {
-            'message': 'utilisateur créé avec succès'
+            'message': 'user created successfully'
         }
-        return response
+        text1 = f"{request.data['first_name']} {request.data['last_name']}"
+        text2 = "User has been created :"
 
+        print(colored(figlet_format(text2), color="green") + colored(figlet_format(text1), color="blue"))
+
+        return response
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -40,14 +46,17 @@ class CustomAuthToken(ObtainAuthToken):
             raise ValidationError({'message': e.detail['non_field_errors']})
         user = serializer.validated_data['user']
 
-        # Delete existing tokens for the user
         Token.objects.filter(user=user).delete()
 
-        # Create a new token for the user
         token = Token.objects.create(user=user)
+        
+        text1 = f"{user.first_name} {user.last_name}"
+        text2 = "has just logged in"
+
+        print(colored(figlet_format(text1), color="blue") + colored(figlet_format(text2), color="green"))
 
         return Response({
-            'message':'Vous vous êtes connecté avec succès.',
+            'message':'You have successfully logged in.',
             'token': token.key,
             'user_id': user.pk,
             'email': user.email,
